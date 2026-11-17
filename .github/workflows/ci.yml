@@ -40,8 +40,14 @@ jobs:
         PGPASSWORD=postgres psql -h localhost -U postgres -d ativowatch -f db/schema.sql
         PGPASSWORD=postgres psql -h localhost -U postgres -d ativowatch -f db/seed.sql
 
-    - name: Instalar dependências e rodar testes
+    - name: Instalar dependências
       working-directory: server
-      run: |
-        npm ci
-        npm test
+      run: npm ci
+
+    - name: Rodar Linter (ESLint)
+      working-directory: server
+      run: npm run lint
+
+    - name: Rodar Testes (Vitest)
+      working-directory: server
+      run: npm test
