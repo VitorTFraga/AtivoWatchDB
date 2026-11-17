@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      db:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ativowatch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: server/package-lock.json
+
+    - name: Instalar psql e aplicar schema
+      run: |
+        sudo apt-get update && sudo apt-get install -y postgresql-client
+        PGPASSWORD=postgres psql -h localhost -U postgres -d ativowatch -f db/schema.sql
+        PGPASSWORD=postgres psql -h localhost -U postgres -d ativowatch -f db/seed.sql
+
+    - name: Instalar dependências e rodar testes
+      working-directory: server
+      run: |
+        npm ci
+        npm test
